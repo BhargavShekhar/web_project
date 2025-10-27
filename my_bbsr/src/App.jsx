@@ -7,6 +7,8 @@ import EngineeringCollege from './components/EngineeringCollege';
 import { HeroSection } from './components/HeroSection';
 import TempleDialog from './components/TempleDialog';
 import TemplePage from './components/TemplePage';
+import ShoppingPlaces from './components/ShoppingPlaces';
+import HistorySection from './components/HistorySection';
 
 const ExploreBhubaneswar = () => {
 
@@ -29,10 +31,12 @@ const ExploreBhubaneswar = () => {
     <div className="font-sans bg-stone-50">
       <Navbar/>
       <HeroSection/>
+      <HistorySection/>
       <TemplePage/>
       <FoodCenter/>
       <TempleDialog/>
       <TouristAttraction/>
+      <ShoppingPlaces/>
       <EngineeringCollege/>
       <Footer/>
     </div>
