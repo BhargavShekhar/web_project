@@ -111,7 +111,7 @@ const HistorySection = () => {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true }}
-          className="text-6xl md:text-7xl font-extrabold text-center bg-gradient-to-r from-amber-700 via-amber-500 to-yellow-400 bg-clip-text text-transparent mb-6"
+          className="text-3xl md:text-5xl font-extrabold text-center bg-gradient-to-r from-amber-700 via-amber-500 to-yellow-400 bg-clip-text text-transparent mb-6"
         >
           Discover Bhubaneswar
         </motion.h2>
@@ -241,11 +241,11 @@ const HistorySection = () => {
                     >
                       {showFullEvents ? (
                         <>
-                          View Less Events <ChevronUp size={18} />
+                          <ChevronUp size={18} />
                         </>
                       ) : (
                         <>
-                          View More Events <ChevronDown size={18} />
+                          <ChevronDown size={18} />
                         </>
                       )}
                     </motion.button>
