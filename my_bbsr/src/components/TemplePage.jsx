@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
-import { Loader2, MapPin, Clock, AlertCircle, Star, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Loader2, MapPin, AlertCircle, Star, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
-const Temple = () => {
+const TemplePage = () => {
   const [temples, setTemples] = useState([]);
-  const [selectedTemple, setSelectedTemple] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const scrollContainerRef = useRef(null);
   const autoScrollRef = useRef(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchTemples();
@@ -20,9 +21,7 @@ const Temple = () => {
       startAutoScroll();
     }
     return () => {
-      if (autoScrollRef.current) {
-        clearInterval(autoScrollRef.current);
-      }
+      if (autoScrollRef.current) clearInterval(autoScrollRef.current);
     };
   }, [temples]);
 
@@ -62,37 +61,13 @@ const Temple = () => {
       setLoading(true);
       setError(null);
 
-      const response = await fetch('http://localhost:8080/temples');
+      const response = await fetch('http://localhost:8080/temples-list');
       if (!response.ok) throw new Error('Failed to fetch temples data');
 
       const data = await response.json();
-      if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
-        throw new Error(data.error_message || 'API request failed');
-      }
+      if (!data.results) throw new Error('No temples found');
 
-      const transformedTemples = data.results.map((temple) => {
-        let imageUrl = '';
-
-        if (temple.photos?.[0]?.photo_reference) {
-          imageUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=${temple.photos[0].photo_reference}&key=AIzaSyCKTTfJD5_TERQvfVR-XimF7c2GJnBekC8`;
-        } else {
-          imageUrl = 'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?w=800&h=600&fit=crop';
-        }
-
-        return {
-          name: temple.name,
-          image: imageUrl,
-          location: temple.formatted_address,
-          rating: temple.rating || 'N/A',
-          userRatingsTotal: temple.user_ratings_total || 0,
-          openNow: temple.opening_hours?.open_now ? 'Open Now' : 'Closed',
-          placeId: temple.place_id,
-          businessStatus: temple.business_status,
-          types: temple.types || []
-        };
-      });
-
-      setTemples(transformedTemples);
+      setTemples(data.results);
     } catch (err) {
       setError(err.message);
       console.error('Error fetching temples:', err);
@@ -101,102 +76,24 @@ const Temple = () => {
     }
   };
 
-  const TempleModal = ({ temple, onClose }) => {
-    if (!temple) return null;
-
-    return (
-      <AnimatePresence>
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto"
-          onClick={onClose}
-        >
-          <motion.div
-            initial={{ scale: 0.95, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.95, opacity: 0, y: 20 }}
-            transition={{ type: "spring", duration: 0.5 }}
-            className="bg-white rounded-2xl max-w-3xl w-full my-8 shadow-2xl overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="relative h-72 md:h-96">
-              <img
-                src={temple.image}
-                alt={temple.name}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.target.src = 'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?w=800&h=600&fit=crop';
-                }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-              <button
-                onClick={onClose}
-                className="absolute top-4 right-4 bg-white/95 hover:bg-white rounded-full p-2.5 transition-all hover:scale-110 shadow-lg"
-                aria-label="Close"
-              >
-                <X className="w-5 h-5 text-gray-800" />
-              </button>
-            </div>
-
-            <div className="p-6 md:p-8">
-              <h3 className="text-3xl md:text-4xl font-bold text-stone-800 mb-6">{temple.name}</h3>
-
-              <div className="space-y-5">
-                <div className="flex items-center gap-3 pb-4 border-b border-stone-200">
-                  <div className="flex items-center gap-2 bg-amber-50 px-4 py-2 rounded-full">
-                    <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
-                    <span className="font-bold text-lg text-stone-800">{temple.rating}</span>
-                  </div>
-                  <span className="text-stone-600">({temple.userRatingsTotal.toLocaleString()} reviews)</span>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <MapPin className="w-5 h-5 text-amber-600 mt-1 flex-shrink-0" />
-                  <p className="text-stone-700 leading-relaxed">{temple.location}</p>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <Clock className="w-5 h-5 text-amber-600 flex-shrink-0" />
-                  <span
-                    className={`px-4 py-2 rounded-full text-sm font-semibold ${temple.openNow === 'Open Now'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-gray-100 text-gray-600'
-                      }`}
-                  >
-                    {temple.openNow}
-                  </span>
-                </div>
-
-                {temple.businessStatus && (
-                  <div className="pt-4">
-                    <span className="inline-block px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">
-                      {temple.businessStatus}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </motion.div>
-        </motion.div>
-      </AnimatePresence>
-    );
-  };
-
   return (
-    <section id="temples" className="py-20 bg-gradient-to-b from-amber-50 to-white">
+    <motion.section
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.4 }}
+      className="min-h-screen py-20 bg-gradient-to-b from-amber-50 to-white"
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           className="text-center mb-12"
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-stone-800 mb-4">
+          <h1 className="text-4xl md:text-5xl font-bold text-stone-800 mb-4">
             Sacred Temples of Bhubaneswar
-          </h2>
+          </h1>
           <p className="text-lg text-stone-600 max-w-2xl mx-auto">
             Discover the spiritual heritage and architectural marvels of the Temple City
           </p>
@@ -241,7 +138,6 @@ const Temple = () => {
 
         {!loading && !error && temples.length > 0 && (
           <div className="relative group">
-            {/* Navigation Buttons */}
             <button
               onClick={() => scroll('left')}
               className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/95 hover:bg-white p-3 rounded-full shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-300 -translate-x-4 group-hover:translate-x-0"
@@ -258,30 +154,20 @@ const Temple = () => {
               <ChevronRight className="w-6 h-6 text-stone-800" />
             </button>
 
-            {/* Horizontal Scroll Container */}
             <div
               ref={scrollContainerRef}
               onMouseEnter={stopAutoScroll}
               onMouseLeave={startAutoScroll}
-              className="flex gap-6 overflow-x-auto scrollbar-hide scroll-smooth pb-4"
-              style={{
-                scrollbarWidth: 'none',
-                msOverflowStyle: 'none',
-              }}
+              className="flex gap-6 overflow-x-auto scroll-smooth pb-4 scrollbar-hide"
             >
               {temples.map((temple, index) => (
                 <motion.div
                   key={temple.placeId}
                   initial={{ opacity: 0, x: 50 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{
-                    duration: 0.5,
-                    delay: index * 0.05,
-                    ease: "easeOut"
-                  }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.05, ease: "easeOut" }}
                   whileHover={{ y: -8 }}
-                  onClick={() => setSelectedTemple(temple)}
+                  onClick={() => navigate(`/temple/${temple.placeId}`)}
                   className="cursor-pointer flex-shrink-0 w-80 sm:w-96"
                 >
                   <Card className="overflow-hidden hover:shadow-2xl transition-all duration-300 group h-full bg-white border-0 shadow-lg">
@@ -301,7 +187,6 @@ const Temple = () => {
                         <h3 className="text-2xl font-bold text-white mb-3 line-clamp-2">
                           {temple.name}
                         </h3>
-
                         <div className="flex items-center gap-2 mb-2">
                           <div className="flex items-center gap-1.5 bg-white/95 px-3 py-1.5 rounded-full backdrop-blur-sm">
                             <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
@@ -313,20 +198,19 @@ const Temple = () => {
                               : temple.userRatingsTotal})
                           </span>
                         </div>
-
                         <div className="flex items-center gap-2 text-white/90">
                           <MapPin className="w-4 h-4 flex-shrink-0" />
                           <p className="text-sm line-clamp-1">{temple.location.split(',')[0]}</p>
                         </div>
                       </div>
-
                       {temple.openNow && (
                         <div className="absolute top-3 right-3">
                           <span
-                            className={`px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg backdrop-blur-sm ${temple.openNow === 'Open Now'
+                            className={`px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg backdrop-blur-sm ${
+                              temple.openNow === 'Open Now'
                                 ? 'bg-green-500/95 text-white'
                                 : 'bg-gray-500/95 text-white'
-                              }`}
+                            }`}
                           >
                             {temple.openNow}
                           </span>
@@ -338,7 +222,6 @@ const Temple = () => {
               ))}
             </div>
 
-            {/* Scroll Indicator */}
             <div className="text-center mt-6">
               <p className="text-stone-500 text-sm">← Scroll or hover to pause auto-scroll →</p>
             </div>
@@ -346,17 +229,16 @@ const Temple = () => {
         )}
       </div>
 
-      <style jsx>{`
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
-
-      {selectedTemple && (
-        <TempleModal temple={selectedTemple} onClose={() => setSelectedTemple(null)} />
-      )}
-    </section>
+      {/* Remove jsx prop warning by using plain style */}
+      <style>
+        {`
+          .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+          }
+        `}
+      </style>
+    </motion.section>
   );
 };
 
-export default Temple;
+export default TemplePage;
